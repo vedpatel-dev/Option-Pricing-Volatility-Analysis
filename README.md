@@ -2,7 +2,7 @@
 
 A professional-grade quantitative finance dashboard built with **Python**, **Streamlit**, and **Plotly**. This tool allows traders and researchers to price options using the **Black-Scholes Model**, analyze **Volatility Surfaces**, and visualize real-time **Greeks**.
 
-**Live Demo:** [INSERT YOUR STREAMLIT APP LINK HERE]
+**Live Demo:** https://option-pricing-volatility-analysis-eoppcuxhpt8l2vbarzsmsz.streamlit.app/
 
 ---
 
@@ -73,5 +73,8 @@ streamlit run option_pricer.py
 
 ## 📬 Contact & Credits
 
-Developed by: Ved Patel
-[LinkedIn: https://www.linkedin.com/in/ved-rajeshkumar-patel-vrp/] | [GitHub: https://github.com/vedpatel-dev]
+**Developed by:** Ved Patel
+
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?style=flat&logo=linkedin)](https://www.linkedin.com/in/ved-rajeshkumar-patel-vrp/)
+
+[![GitHub](https://img.shields.io/badge/GitHub-Follow-black?style=flat&logo=github)](https://github.com/vedpatel-dev)

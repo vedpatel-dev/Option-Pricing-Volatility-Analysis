@@ -11,7 +11,7 @@ import yfinance as yf
 import time
 
 st.set_page_config(
-    page_title="Black-Scholes Option Pricing Model",
+    page_title="Black Scholes Option Pricing Model",
     page_icon='📈',
     layout='wide',
     initial_sidebar_state='expanded'
@@ -95,13 +95,14 @@ class BlackScholes:
         return self.call_price, self.put_price
 
 with st.sidebar:
-    st.title("Black Scholes Model")
     st.markdown(f'''
     <a href="https://www.linkedin.com/in/ved-rajeshkumar-patel-vrp/" target="_blank" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
         <img src="https://cdn-icons-png.flaticon.com/512/174/174857.png" width="20" height="20" />
         <span style="font-size: 16px; font-weight: normal;">Ved Patel</span>
     </a>
     ''', unsafe_allow_html=True)
+
+    st.title("⚙️ Dashboard Controls")
 
     ticker_symbol = st.text_input("Enter Stock Ticker Symbol (e.g: MSFT, AAPL, NVDA):", value="NVDA")
     use_real_price = st.checkbox("Use Real-Time Price", value=True)
