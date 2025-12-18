@@ -2,7 +2,7 @@
 
 A professional-grade quantitative finance dashboard built with **Python**, **Streamlit**, and **Plotly**. This tool allows traders and researchers to price options using the **Black-Scholes Model**, analyze **Volatility Surfaces**, and visualize real-time **Greeks**.
 
-**Live Demo:** https://option-pricing-volatility-analysis-eoppcuxhpt8l2vbarzsmsz.streamlit.app/
+**Live Demo:** https://option-pricing-volatility-analysis.streamlit.app/
 
 ---
 
