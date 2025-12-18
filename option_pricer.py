@@ -316,19 +316,29 @@ if st.button("Generate P&L Heatmap"):
         st.pyplot(fig_put)
 
 if ticker_symbol:
+    option_chain = None
     try:
-        time.sleep(2)
         if ticker is None:
-            raise RuntimeError("Ticker object not available")
+             ticker = yf.Ticker(ticker_symbol) # Try one more time if needed
+             
+        # This is the line that fails on Cloud but works on Localhost
         option_chain = ticker.option_chain()
-        st.subheader("Sample Option Chain - Calls")
-        # 1. DATA CLEANING (Crucial for Real World Data)
-        calls = option_chain.calls
-        # Filter for strikes within 50% of spot price to focus on relevant data
-        calls = calls[(calls['strike'] > current_price_live * 0.5) & (calls['strike'] < current_price_live * 1.5)]
-        calls = calls[calls['impliedVolatility'] > 0] # Remove invalid data
         
-        # 2. PLOTTING THE VOLATILITY SMILE
+    except Exception as e:
+        # If Cloud blocks us, we just print a warning but DON'T crash
+        st.warning(f"⚠️ Yahoo Finance Rate Limit: Option Chain charts are temporarily unavailable. (Error: {e})")
+        option_chain = None
+
+    # 1. Option Chain Analysis (Only runs if we successfully got data)
+    if option_chain is not None:
+        st.subheader("Sample Option Chain - Calls")
+        
+        calls = option_chain.calls
+        # Filter for strikes within 50% of spot price
+        calls = calls[(calls['strike'] > current_price_live * 0.5) & (calls['strike'] < current_price_live * 1.5)]
+        calls = calls[calls['impliedVolatility'] > 0] 
+        
+        # Plot Volatility Smile
         fig_iv = go.Figure()
         fig_iv.add_trace(go.Scatter(
             x=calls['strike'], y=calls['impliedVolatility'],
@@ -338,34 +348,31 @@ if ticker_symbol:
         fig_iv.add_vline(x=current_price_live, line_dash="dash", line_color="white", annotation_text="Spot")
         fig_iv.update_layout(title=f'Implied Volatility Skew for {ticker_symbol}', xaxis_title='Strike', yaxis_title='Implied Vol (σ)', template='plotly_dark')
         st.plotly_chart(fig_iv, width='stretch')
-        # Pricing error comparison
-        calls = option_chain.calls.copy()
+
+        # Pricing error analysis
         calls['strike_diff'] = abs(calls['strike'] - strike)
-        closest_call = calls.sort_values(by='strike_diff').iloc[0]
-        market_price = closest_call['lastPrice']
-        market_iv = closest_call['impliedVolatility']
-        market_strike = closest_call['strike']
+        if not calls.empty:
+            closest_call = calls.sort_values(by='strike_diff').iloc[0]
+            market_price = closest_call['lastPrice']
+            market_iv = closest_call['impliedVolatility']
+            market_strike = closest_call['strike']
 
-        model_market_bs = BlackScholes(time_to_maturity, market_strike, current_price, market_iv, interest_rate)
-        model_market_call, _ = model_market_bs.calculate_prices()
-        pricing_error = model_market_call - market_price
+            model_market_bs = BlackScholes(time_to_maturity, market_strike, current_price, market_iv, interest_rate)
+            model_market_call, _ = model_market_bs.calculate_prices()
+            pricing_error = model_market_call - market_price
 
-        st.subheader("Pricing Error vs Market")
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Market Strike", f"${market_strike:.2f}")
-        col2.metric("Market Call Price", f"${market_price:.2f}")
-        col3.metric("Model Call Price", f"${model_market_call:.2f}")
-        st.markdown(f"**Pricing Error**: ${pricing_error:.2f} (Model - Market)")
-
-        error_pct = 100 * pricing_error / market_price
-        st.markdown(f"**Pricing Error %**: ({error_pct:+.1f}%)")
-    
-        if 'market_price' in locals():
-            st.subheader("Pricing Error Heatmap")
-            fig_error = plot_pricing_error_heatmap(time_to_maturity, interest_rate, market_strike, spot_range, vol_range, market_price)
-            st.pyplot(fig_error)
-
+            st.subheader("Pricing Error vs Market")
+            col1, col2, col3 = st.columns(3)
+            col1.metric("Market Strike", f"${market_strike:.2f}")
+            col2.metric("Market Call Price", f"${market_price:.2f}")
+            col3.metric("Model Call Price", f"${model_market_call:.2f}")
+            st.markdown(f"**Pricing Error**: ${pricing_error:.2f} (Model - Market)")
+            
             if show_advanced:
+                st.subheader("Pricing Error Heatmap")
+                fig_error = plot_pricing_error_heatmap(time_to_maturity, interest_rate, market_strike, spot_range, vol_range, market_price)
+                st.pyplot(fig_error)
+
                 st.subheader("Delta / Gamma Surfaces")
                 fig_delta, fig_gamma = plot_greeks_surface(time_to_maturity, interest_rate, market_strike, spot_range, vol_range)
                 col1, col2 = st.columns(2)
@@ -373,14 +380,15 @@ if ticker_symbol:
                     st.pyplot(fig_delta)
                 with col2:
                     st.pyplot(fig_gamma)
-            
-            # --- NEW SECTION: HISTORICAL VOLATILITY ---
-        if show_advanced:
+
+    # 2. Historical Volatility (Independent of Option Chain)
+    # This will NOW work on Cloud even if Option Chain fails!
+    if show_advanced and ticker is not None:
+        try:
             st.title("Realized Volatility Analysis")
-        
             history = ticker.history(period="1y")
+            
             if not history.empty:
-                # Calculate Log Returns and Rolling Standard Deviation (Annualized)
                 history['Log Returns'] = np.log(history['Close'] / history['Close'].shift(1))
                 history['Realized Volatility'] = history['Log Returns'].rolling(window=30).std() * np.sqrt(252)
             
@@ -388,5 +396,5 @@ if ticker_symbol:
                 fig_vol.add_trace(go.Scatter(x=history.index, y=history['Realized Volatility'], name='30-Day Realized Vol', line=dict(color='orange')))
                 fig_vol.update_layout(title=f'Historical Volatility (30-Day Rolling)', xaxis_title='Date', yaxis_title='Volatility', template='plotly_dark')
                 st.plotly_chart(fig_vol, width='stretch')
-    except Exception as e:
-        st.error(f"Option chain fetch failed: {e}")
+        except Exception:
+            pass
